@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run cmd/main.go",
+        "type": "shell",
+        "command": "go run cmd/main.go",
+        // "cwd": "/home/casiomacasio/Desktop/OldFilesToNewSystem/Projects/Golang Projects/todo-app",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+  
