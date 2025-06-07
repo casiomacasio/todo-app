@@ -2,9 +2,9 @@ package repository
 
 import (
 	"fmt"
-
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthPostgres struct {
@@ -23,4 +23,18 @@ func (r *AuthPostgres) CreateUser(user domain.User) (int, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+func (r *AuthPostgres) GetUser(username, password string) (domain.User, error) {
+	var user domain.User
+	query := fmt.Sprintf(`SELECT id, password_hash FROM %s WHERE username=$1`, usersTable)
+	err := r.db.Get(&user, query, username)
+	if err != nil {
+		return domain.User{}, fmt.Errorf("user not found")
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return domain.User{}, fmt.Errorf("invalid password")
+	}
+	return user, err
 }
