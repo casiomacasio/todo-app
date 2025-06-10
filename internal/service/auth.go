@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/casiomacasio/todo-app/internal/domain"
@@ -12,8 +13,6 @@ import (
 )
 
 const (
-	salt = "sjfkla;sjfkjaefe4324jifjewajfjefiowejf;weijf"
-	signingKey = "eoeifjoewifewiofjewiof"
 	tokenTTL = 12 * time.Hour
 )
 
@@ -36,7 +35,7 @@ func (s *AuthService) CreateUser(user domain.User) (int,error) {
 }
 
 func (s *AuthService) GenerateToken(username, password string) (string, error) {
-	user, err := s.repo.GetUser(username, (password+salt))
+	user, err := s.repo.GetUser(username, (password+os.Getenv("salt")))
 	if err != nil {
 		return "", err
 	}
@@ -46,15 +45,15 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 		IssuedAt: time.Now().Unix(),
 		}, user.Id,
 	})
-	return token.SignedString([]byte(signingKey))
+	return token.SignedString([]byte(os.Getenv("signingKey")))
 }
 
 func (s *AuthService) ParseToken(accessToken string) (int, error) { 
 	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("invalid signin method!")
+			return nil, fmt.Errorf("invalid signin method")
 		}
-		return []byte(signingKey), nil
+		return []byte(os.Getenv("signingKey")), nil
 	})
 	if err != nil {
 		return 0, err
@@ -67,7 +66,7 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 }
 
 func GeneratePasswordHash(password string) (string,error) {
-	password += salt	
+	password += os.Getenv("salt")	
 	fmt.Println(password, "auth level")
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
