@@ -2,7 +2,7 @@ package repository
 
 import (
 	"fmt"
-
+	"strings"
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/jmoiron/sqlx"
 )
@@ -56,18 +56,33 @@ func (r *TodoListPostgres) GetById(userId, listId int) (domain.TodoList, error) 
 	return list, nil
 }
 
-func (r *TodoListPostgres) UpdateById(userId, listId int, title, description string) (domain.TodoList, error) {
-	var list domain.TodoList
 
-	query := fmt.Sprintf("UPDATE %s tl SET title = COALESCE($1, tl.title), description = COALESCE($2, tl.description) FROM %s ul WHERE tl.id = ul.list_id AND ul.user_id = $3 AND tl.id = $4 RETURNING tl.id, tl.title, tl.description", todoListsTable, usersListsTable)
-	err := r.db.Get(&list, query, title, description, userId, listId)
+func (r *TodoListPostgres) UpdateById(userId, listId int, title, description *string) error {
+	query := fmt.Sprintf("UPDATE %s tl SET", todoListsTable)
+	args := []interface{}{}
+	argIdx := 1
 
-	if err != nil {
-		return list, fmt.Errorf("failed to do a request: %w", err)
+	if title != nil {
+		query += fmt.Sprintf(" title = $%d,", argIdx)
+		args = append(args, *title)
+		argIdx++
+	}
+	if description != nil {
+		query += fmt.Sprintf(" description = $%d,", argIdx)
+		args = append(args, *description)
+		argIdx++
 	}
 
-	return list, nil
+	query = strings.TrimSuffix(query, ",")
+
+	query += fmt.Sprintf(" FROM %s ul WHERE tl.id = ul.list_id AND ul.user_id = $%d AND tl.id = $%d", usersListsTable, argIdx, argIdx+1)
+	args = append(args, userId, listId)
+
+	_, err := r.db.Exec(query, args...)
+	return err
 }
+
+
 
 func (r *TodoListPostgres) DeleteById(userId, listId int) error {
 	tx, err := r.db.Begin()

@@ -77,17 +77,19 @@ func (h Handler) updateList(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid id param")
 		return
 	}
-	var input domain.TodoList
+	var input domain.UpdateListInput
 	if err := c.BindJSON(&input); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	list, err := h.service.TodoList.UpdateById(userId, id, input.Title, input.Description);
+	err = h.service.TodoList.UpdateById(userId, id, input.Title, input.Description);
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, getListByIdResponses{Data: list})
+	c.JSON(http.StatusOK, map[string]string{
+		"status": "updated",
+	})
 }
 
 func (h Handler) deleteList(c *gin.Context) {
