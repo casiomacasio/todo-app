@@ -3,6 +3,8 @@ package repository
 import (
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/jmoiron/sqlx"
+	"github.com/google/uuid"
+	"time"
 )
 
 const (
@@ -11,11 +13,15 @@ const (
 	usersListsTable = "users_lists"
 	todoItemsTable  = "todo_items"
 	listsItemsTable = "lists_items"
+	refreshTokensTable = "refresh_tokens"
 )
 
 type Authorization interface{
 	CreateUser(user domain.User) (int, error) 
 	GetUser(username, password string) (domain.User, error) 
+	SaveRefreshToken(refreshToken uuid.UUID, userId int, expires_at time.Time) error
+	CheckRefreshToken(refreshToken uuid.UUID) (int, error) 
+	DeleteRefreshToken(refreshToken uuid.UUID) error 
 }
 
 type TodoList interface{

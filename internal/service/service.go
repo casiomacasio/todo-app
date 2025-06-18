@@ -9,6 +9,7 @@ type Authorization interface {
 	CreateUser(user domain.User) (int, error)
 	GenerateToken(username, password string) (string, error) 
 	ParseToken(token string) (int, error)
+	GenerateRefreshToken() (string, error)
 }
 
 type TodoList interface {

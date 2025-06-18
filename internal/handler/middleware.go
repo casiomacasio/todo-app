@@ -20,7 +20,7 @@ func (h Handler) userIdentity(c *gin.Context) {
 	}
 	headerParts := strings.Split(header, " ")
 	if len(headerParts) != 2 {
-		newErrorResponse(c, http.StatusUnauthorized, "header`s length in invalid")
+		newErrorResponse(c, http.StatusUnauthorized, "header's length in invalid")
 		return
 	}
 	userID, err := h.service.Authorization.ParseToken(headerParts[1])
