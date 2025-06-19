@@ -3,8 +3,8 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strings"
 	"github.com/gin-gonic/gin"
+	"github.com/casiomacasio/todo-app/internal/service"
 )
 
 const (
@@ -13,22 +13,24 @@ const (
 )
 
 func (h Handler) userIdentity(c *gin.Context) {
-	header := c.GetHeader(authorizationHeader)
-	if header == "" {
-		newErrorResponse(c, http.StatusUnauthorized, "empty auth header")
-		return
-	}
-	headerParts := strings.Split(header, " ")
-	if len(headerParts) != 2 {
-		newErrorResponse(c, http.StatusUnauthorized, "header's length in invalid")
-		return
-	}
-	userID, err := h.service.Authorization.ParseToken(headerParts[1])
+	token, err := c.Cookie("access_token")
 	if err != nil {
+		newErrorResponse(c, http.StatusUnauthorized, "missing access token cookie")
+		return
+	}
+
+	userID, err := h.service.Authorization.ParseToken(token)
+	if err != nil {
+		if errors.Is(err, service.ErrTokenExpired) {
+			c.Header("Token-Expired", "true")
+			newErrorResponse(c, http.StatusUnauthorized, "token expired, must be refreshed")
+			return
+		}
 		newErrorResponse(c, http.StatusUnauthorized, err.Error())
 		return
 	}
-	c.Set(userCtx,userID)
+
+	c.Set(userCtx, userID)
 }
 
 func getUserID(c *gin.Context) (int, error) {

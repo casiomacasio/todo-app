@@ -20,8 +20,9 @@ type Authorization interface{
 	CreateUser(user domain.User) (int, error) 
 	GetUser(username, password string) (domain.User, error) 
 	SaveRefreshToken(refreshToken uuid.UUID, userId int, expires_at time.Time) error
-	CheckRefreshToken(refreshToken uuid.UUID) (int, error) 
+	GetUserByRefreshToken(refreshToken uuid.UUID) (int, error) 
 	DeleteRefreshToken(refreshToken uuid.UUID) error 
+	RevokeRefreshToken(userId int) (bool, error)
 }
 
 type TodoList interface{

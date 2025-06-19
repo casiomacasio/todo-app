@@ -2,11 +2,10 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"crypto/rand"
 	"os"
 	"time"
-
+	"github.com/google/uuid"
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/casiomacasio/todo-app/internal/repository"
 	"github.com/dgrijalva/jwt-go"
@@ -19,6 +18,7 @@ const (
 
 var (
 	ErrInvalidToken = errors.New("invalid token")
+	ErrTokenExpired = errors.New("token expired")
 )
 
 type tokenClaims struct {
@@ -50,23 +50,13 @@ func (s *AuthService) CreateUser(user domain.User) (int, error) {
 	return id, nil
 }
 
-func (s *AuthService) GenerateToken(username, password string) (string, error) {
-	user, err := s.repo.GetUser(username, password)
-	if err != nil {
-		if err == repository.ErrUserNotFound {
-			return "", repository.ErrUserNotFound
-		}
-		if err == repository.ErrInvalidPassword {
-			return "", repository.ErrInvalidPassword
-		}
-		return "", err
-	}
+func (s *AuthService) GenerateToken(userId int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(tokenTTL).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
-		user.Id,
+		userId,
 	})
 	signingKey := []byte(os.Getenv("signingKey"))
 	signedToken, err := token.SignedString(signingKey)
@@ -76,13 +66,66 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 	return signedToken, nil
 }
 
-func (s *AuthService) GenerateRefreshToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
+func (s *AuthService) RevokeRefreshToken(refresh_token string) error {
+	userId, err := s.GetUserByRefreshToken(refresh_token)
+	if err != nil {
+		return err
+	}
+	_, err = s.repo.RevokeRefreshToken(userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *AuthService) GetUserByRefreshToken(refresh_token string) (int, error) {
+	id, err := uuid.Parse(refresh_token)
+	if err != nil {
+		return 0, err
+	}
+	userId, err := s.repo.GetUserByRefreshToken(id)
+	if err != nil {
+		return 0, err
+	}
+	return userId, nil
+}
+
+func (s *AuthService) GenerateRefreshToken(userId int) (string, error) {
+	_, err := s.repo.RevokeRefreshToken(userId)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%x", b), nil
+	b := make([]byte, 16) 
+	_, err = rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	tokenUUID, err := uuid.FromBytes(b)
+	if err != nil {
+		return "", err
+	}
+
+	expiresAt := time.Now().Add(30 * 24 * time.Hour)
+
+	err = s.repo.SaveRefreshToken(tokenUUID, userId, expiresAt)
+	if err != nil {
+		return "", err
+	}
+	return tokenUUID.String(), nil
+}
+
+func (s *AuthService) GetUser(username, password string) (domain.User, error) {
+	user, err := s.repo.GetUser(username, password)
+	if err != nil {
+		if err == repository.ErrUserNotFound {
+			return domain.User{}, repository.ErrUserNotFound
+		}
+		if err == repository.ErrInvalidPassword {
+			return domain.User{}, repository.ErrInvalidPassword
+		}
+		return domain.User{}, err
+	}
+	return user, nil
 }
 
 func (s *AuthService) ParseToken(accessToken string) (int, error) {
@@ -94,6 +137,12 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 	})
 	if err != nil {
 		return 0, err
+	}
+	if err != nil {
+		if ve, ok := err.(*jwt.ValidationError); ok && ve.Errors&jwt.ValidationErrorExpired != 0 {
+			return 0, ErrTokenExpired 
+		}
+		return 0, ErrInvalidToken
 	}
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok || !token.Valid {

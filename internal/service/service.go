@@ -7,9 +7,12 @@ import (
 
 type Authorization interface {
 	CreateUser(user domain.User) (int, error)
-	GenerateToken(username, password string) (string, error) 
+	GetUserByRefreshToken(refresh_token string) (int, error)
 	ParseToken(token string) (int, error)
-	GenerateRefreshToken() (string, error)
+	GetUser(username, password string) (domain.User, error)
+	GenerateToken(userId int) (string, error)
+	GenerateRefreshToken(userId int) (string, error)
+	RevokeRefreshToken(refresh_token string) error
 }
 
 type TodoList interface {

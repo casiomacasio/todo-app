@@ -40,44 +40,77 @@ func (h *Handler) signIn(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	token, err := h.service.GenerateToken(input.Username, input.Password)
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"token": token,
-	})
-}
 
-func (h *Handler) logIn(c *gin.Context) {
-	var input signInInput
-	if err := c.BindJSON(&input); err != nil {
+	user, err := h.service.GetUser(input.Username, input.Password)
+	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	token, err := h.service.GenerateToken(input.Username, input.Password)
+
+	refreshToken, err := h.service.GenerateRefreshToken(user.Id)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"token": token,
+	accessToken, err := h.service.GenerateToken(user.Id)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.SetCookie("refresh_token", refreshToken, 30*24*60*60, "/", "", true, true) 
+	c.SetCookie("access_token", accessToken, 15*60, "/", "", true, true)      
+
+	c.JSON(http.StatusOK, map[string]string{
+		"message": "logged in successfully",
 	})
 }
 
-func (h *Handler) logOut(c *gin.Context) {
-	var input signInInput
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	token, err := h.service.GenerateToken(input.Username, input.Password)
+
+func (h *Handler) refresh(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		newErrorResponse(c, http.StatusUnauthorized, "no refresh token cookie")
 		return
 	}
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"token": token,
+
+	userId, err := h.service.GetUserByRefreshToken(refreshToken)
+	if err != nil {
+		if errors.Is(err, repository.ErrRefreshTokenExpired) {
+			c.Header("RefreshToken-Expired", "true")
+			newErrorResponse(c, http.StatusUnauthorized, "refresh_token expired, must re-login")
+			return
+		}
+		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	newAccessToken, err := h.service.GenerateToken(userId)
+	if err != nil {
+		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	newRefreshToken, err := h.service.Authorization.GenerateRefreshToken(userId)
+	if err != nil {
+		newErrorResponse(c, http.StatusUnauthorized, "failed to generate new refresh token")
+		return
+	}
+
+	c.SetCookie("refresh_token", newRefreshToken, 30*24*60*60, "/", "", true, true)
+	c.SetCookie("access_token", newAccessToken, 60*60, "/", "", true, true)
+
+	c.JSON(http.StatusOK, map[string]string{
+		"message": "token refreshed",
 	})
+}
+
+
+func (h *Handler) logout(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err == nil {
+		_ = h.service.Authorization.RevokeRefreshToken(refreshToken) 
+	}
+	c.SetCookie("refresh_token", "", -1, "/", "", true, true)
+	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }

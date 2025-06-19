@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/casiomacasio/todo-app/internal/domain"
@@ -17,6 +18,7 @@ var (
 	ErrUsernameExists  = errors.New("username already exists")
 	ErrUserNotFound    = errors.New("user not found")
 	ErrInvalidPassword = errors.New("invalid password")
+	ErrRefreshTokenExpired = errors.New("refresh token expired")
 )
 
 type AuthPostgres struct {
@@ -42,7 +44,7 @@ func (r *AuthPostgres) CreateUser(user domain.User) (int, error) {
 
 func (r *AuthPostgres) GetUser(username, password string) (domain.User, error) {
 	var user domain.User
-	query := fmt.Sprintf(`SELECT id, password_hash FROM %s WHERE username=$1`, usersTable)
+	query := fmt.Sprintf(`SELECT id, username, password_hash FROM %s WHERE username=$1`, usersTable)
 	err := r.db.Get(&user, query, username)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -50,7 +52,7 @@ func (r *AuthPostgres) GetUser(username, password string) (domain.User, error) {
 		}
 		return domain.User{}, err
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password+os.Getenv("salt")))
 	if err != nil {
 		return domain.User{}, ErrInvalidPassword
 	}
@@ -64,6 +66,25 @@ func (r *AuthPostgres) GetUser(username, password string) (domain.User, error) {
 // 	Revoked   bool
 // }
 
+
+func (r *AuthPostgres) RevokeRefreshToken(userId int) (bool, error) {
+	query := fmt.Sprintf(`UPDATE %s SET revoked = true WHERE user_id = $1 AND revoked = false`, refreshTokensTable)
+
+	res, err := r.db.Exec(query, userId)
+	if err != nil {
+		return false, err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if rowsAffected == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (r *AuthPostgres) SaveRefreshToken(refreshToken uuid.UUID, userId int, expires_at time.Time) error {
 	query := fmt.Sprintf(`INSERT INTO %s (token, user_id, expires_at) VALUES ($1, $2, $3)`, refreshTokensTable)
 	_, err := r.db.Exec(query, refreshToken, userId, expires_at)
@@ -73,15 +94,26 @@ func (r *AuthPostgres) SaveRefreshToken(refreshToken uuid.UUID, userId int, expi
 	return nil
 }
 
-func (r *AuthPostgres) CheckRefreshToken(refreshToken uuid.UUID) (int, error) {
-	var userID int
-	query := fmt.Sprintf(`SELECT user_id FROM %s WHERE token = $1`, refreshTokensTable)
-	err := r.db.Get(&userID, query, refreshToken)
+func (r *AuthPostgres) GetUserByRefreshToken(refreshToken uuid.UUID) (int, error) {
+	type expid struct {
+		UserID    int       `db:"user_id"`
+		ExpiredAt time.Time `db:"expires_at"`
+	}
+	var expd expid
+
+	query := fmt.Sprintf(`SELECT user_id, expires_at FROM %s WHERE token = $1`, refreshTokensTable)
+	err := r.db.Get(&expd, query, refreshToken)
 	if err != nil {
 		return 0, err
 	}
-	return userID, nil
+
+	if time.Now().After(expd.ExpiredAt) {
+		return 0, ErrRefreshTokenExpired
+	}
+
+	return expd.UserID, nil
 }
+
 
 func (r *AuthPostgres) DeleteRefreshToken(refreshToken uuid.UUID) error {
 	query := fmt.Sprintf(`UPDATE %s SET revoked = true WHERE token = $1`, refreshTokensTable)
