@@ -3,16 +3,17 @@ package service
 import (
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/casiomacasio/todo-app/internal/repository"
+	"github.com/google/uuid"
 )
 
 type Authorization interface {
 	CreateUser(user domain.User) (int, error)
-	GetUserByRefreshToken(refresh_token string) (int, error)
+	GetUserByRefreshTokenAndRefreshTokenId(refresh_token string, refreshTokenUUID uuid.UUID) (int, error)
 	ParseToken(token string) (int, error)
 	GetUser(username, password string) (domain.User, error)
 	GenerateToken(userId int) (string, error)
-	GenerateRefreshToken(userId int) (string, error)
-	RevokeRefreshToken(refresh_token string) error
+	GenerateRefreshToken(userId int) (string, string, error)
+	RevokeRefreshToken(userId int) error
 }
 
 type TodoList interface {

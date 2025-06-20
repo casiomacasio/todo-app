@@ -49,7 +49,7 @@ func (r *TodoItemPostgres) Create(userId, listId int, input domain.TodoItem) (in
 
 func (r *TodoItemPostgres) GetAllItems(userId, listId int) ([]domain.TodoItem, error) {
 	var items []domain.TodoItem
-	getAllItemsQuery := fmt.Sprintf("SELECT ti.id, ti.title, ti.description FROM %s ti INNER JOIN %s li ON ti.id = li.item_id INNER JOIN %s ul ON li.list_id = ul.list_id WHERE ul.user_id = $1 AND ul.list_id = $2", todoItemsTable, listsItemsTable, usersListsTable)
+	getAllItemsQuery := fmt.Sprintf("SELECT ti.id, ti.title, ti.description, ti.done FROM %s ti INNER JOIN %s li ON ti.id = li.item_id INNER JOIN %s ul ON li.list_id = ul.list_id WHERE ul.user_id = $1 AND ul.list_id = $2", todoItemsTable, listsItemsTable, usersListsTable)
 	err := r.db.Select(&items, getAllItemsQuery, userId, listId)
 	if err !=nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (r *TodoItemPostgres) GetAllItems(userId, listId int) ([]domain.TodoItem, e
 
 func (r *TodoItemPostgres) GetById(userId, itemId int) (domain.TodoItem, error) {
 	var item domain.TodoItem
-	getItemByIdQuery := fmt.Sprintf("SELECT ti.id, ti.title, ti.description FROM %s ti INNER JOIN %s li ON ti.id = li.item_id INNER JOIN %s ul ON li.list_id = ul.list_id WHERE ul.user_id = $1 AND ti.id = $2", todoItemsTable, listsItemsTable, usersListsTable)
+	getItemByIdQuery := fmt.Sprintf("SELECT ti.id, ti.title, ti.description, ti.done FROM %s ti INNER JOIN %s li ON ti.id = li.item_id INNER JOIN %s ul ON li.list_id = ul.list_id WHERE ul.user_id = $1 AND ti.id = $2", todoItemsTable, listsItemsTable, usersListsTable)
 	err := r.db.Get(&item, getItemByIdQuery, userId, itemId)
 	if err !=nil {
 		return domain.TodoItem{}, err

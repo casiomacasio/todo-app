@@ -19,8 +19,8 @@ const (
 type Authorization interface{
 	CreateUser(user domain.User) (int, error) 
 	GetUser(username, password string) (domain.User, error) 
-	SaveRefreshToken(refreshToken uuid.UUID, userId int, expires_at time.Time) error
-	GetUserByRefreshToken(refreshToken uuid.UUID) (int, error) 
+	SaveRefreshToken(hashed_token string, userId int, expires_at time.Time) (uuid.UUID, error)
+	GetUserIdAndHashByRefreshTokenId(refreshToken uuid.UUID) (int, string, error) 
 	DeleteRefreshToken(refreshToken uuid.UUID) error 
 	RevokeRefreshToken(userId int) (bool, error)
 }

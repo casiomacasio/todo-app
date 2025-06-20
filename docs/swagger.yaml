@@ -1,0 +1,507 @@
+basePath: /
+definitions:
+  domain.TodoItem:
+    properties:
+      description:
+        type: string
+      done:
+        type: boolean
+      id:
+        type: integer
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  domain.TodoList:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  domain.UpdateItemInput:
+    properties:
+      description:
+        type: string
+      done:
+        type: boolean
+      title:
+        type: string
+    type: object
+  domain.UpdateListInput:
+    properties:
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      _:
+        type: integer
+      name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - name
+    - password
+    - username
+    type: object
+  handler.errorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  handler.getAllItemsResponses:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.TodoItem'
+        type: array
+    type: object
+  handler.getAllListsResponses:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.TodoList'
+        type: array
+    type: object
+  handler.getItemByIdResponses:
+    properties:
+      data:
+        $ref: '#/definitions/domain.TodoItem'
+    type: object
+  handler.getListByIdResponses:
+    properties:
+      data:
+        $ref: '#/definitions/domain.TodoList'
+    type: object
+  handler.signInInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+host: localhost:8000
+info:
+  contact: {}
+  description: API Server for TodoList Application
+  title: Todo App API
+  version: "1.0"
+paths:
+  /api/items/{id}:
+    delete:
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an item
+      tags:
+      - items
+    get:
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.getItemByIdResponses'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get item by ID
+      tags:
+      - items
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated item data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateItemInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an existing item
+      tags:
+      - items
+  /api/lists:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.getAllListsResponses'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all todo lists
+      tags:
+      - lists
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Todo list data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.TodoList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Created list ID
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new todo list
+      tags:
+      - lists
+  /api/lists/{id}:
+    delete:
+      parameters:
+      - description: List ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a todo list
+      tags:
+      - lists
+    get:
+      parameters:
+      - description: List ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.getListByIdResponses'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get todo list by ID
+      tags:
+      - lists
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: List ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated list data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateListInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a todo list
+      tags:
+      - lists
+  /api/lists/{id}/items:
+    get:
+      parameters:
+      - description: Todo list ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.getAllItemsResponses'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all items in a list
+      tags:
+      - items
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Todo list ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Todo item data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.TodoItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Created item ID
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new todo item
+      tags:
+      - items
+  /auth/logout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User logout
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New tokens set in cookies
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Username and password
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.signInInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      summary: User login
+      tags:
+      - auth
+  /auth/sign-up:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Registered user ID
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "409":
+          description: Username already exists
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      summary: User registration
+      tags:
+      - auth
+securityDefinitions:
+  CookieAuth:
+    in: header
+    name: Cookie
+    type: apiKey
+swagger: "2.0"

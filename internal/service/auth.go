@@ -66,53 +66,60 @@ func (s *AuthService) GenerateToken(userId int) (string, error) {
 	return signedToken, nil
 }
 
-func (s *AuthService) RevokeRefreshToken(refresh_token string) error {
-	userId, err := s.GetUserByRefreshToken(refresh_token)
-	if err != nil {
-		return err
-	}
-	_, err = s.repo.RevokeRefreshToken(userId)
+func (s *AuthService) RevokeRefreshToken(userId int) error {
+	_, err := s.repo.RevokeRefreshToken(userId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *AuthService) GetUserByRefreshToken(refresh_token string) (int, error) {
-	id, err := uuid.Parse(refresh_token)
+func (s *AuthService) GetUserByRefreshTokenAndRefreshTokenId(refresh_token string, refreshTokenUUID uuid.UUID) (int, error) {
+	userId, hashedToken, err := s.repo.GetUserIdAndHashByRefreshTokenId(refreshTokenUUID)
 	if err != nil {
 		return 0, err
 	}
-	userId, err := s.repo.GetUserByRefreshToken(id)
+
+	err = bcrypt.CompareHashAndPassword([]byte(hashedToken), []byte(refresh_token))
 	if err != nil {
-		return 0, err
+		return 0, err 
 	}
+
 	return userId, nil
 }
 
-func (s *AuthService) GenerateRefreshToken(userId int) (string, error) {
+func (s *AuthService) GenerateRefreshToken(userId int) (string, string, error) {
 	_, err := s.repo.RevokeRefreshToken(userId)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	b := make([]byte, 16) 
+
+	b := make([]byte, 16)
 	_, err = rand.Read(b)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
+
 	tokenUUID, err := uuid.FromBytes(b)
 	if err != nil {
-		return "", err
+		return "", "", err
+	}
+
+	hashedToken, err := GenerateTokenHash(tokenUUID)
+	if err != nil {
+		return "", "", err
 	}
 
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
 
-	err = s.repo.SaveRefreshToken(tokenUUID, userId, expiresAt)
+	id, err := s.repo.SaveRefreshToken(hashedToken, userId, expiresAt)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return tokenUUID.String(), nil
+
+	return id.String(), tokenUUID.String(), nil
 }
+
 
 func (s *AuthService) GetUser(username, password string) (domain.User, error) {
 	user, err := s.repo.GetUser(username, password)
@@ -155,9 +162,17 @@ func GeneratePasswordHash(password string) (string, error) {
 	if password == "" {
 		return "", errors.New("password cannot be empty")
 	}
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password+os.Getenv("salt")), bcrypt.DefaultCost)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func GenerateTokenHash(refreshToken uuid.UUID) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(refreshToken.String()), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
 }

@@ -3,14 +3,12 @@ package handler
 import (
 	"errors"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/casiomacasio/todo-app/internal/service"
 )
 
-const (
-	authorizationHeader = "Authorization"
-	userCtx = "userId"
-)
+const userCtx = "userId"
 
 func (h Handler) userIdentity(c *gin.Context) {
 	token, err := c.Cookie("access_token")
