@@ -84,7 +84,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Updated item data",
+                        "description": "Updated item data (title, description)",
                         "name": "input",
                         "in": "body",
                         "required": true,
@@ -495,6 +495,9 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -504,12 +507,30 @@ const docTemplate = `{
                 "summary": "User logout",
                 "responses": {
                     "200": {
-                        "description": "Logout success message",
+                        "description": "Logout success message; cookies cleared",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token format",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or expired refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
                         }
                     }
                 }
@@ -517,6 +538,9 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -526,7 +550,7 @@ const docTemplate = `{
                 "summary": "Refresh access token",
                 "responses": {
                     "200": {
-                        "description": "New tokens set in cookies",
+                        "description": "New access and refresh tokens are set in cookies",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -534,8 +558,20 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "400": {
+                        "description": "Invalid token format",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Missing or expired refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
                         "schema": {
                             "$ref": "#/definitions/handler.errorResponse"
                         }
@@ -568,7 +604,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Login success message",
+                        "description": "Login success message; sets cookies: access_token, refresh_token, refresh_token_id",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -577,13 +613,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request or credentials",
                         "schema": {
                             "$ref": "#/definitions/handler.errorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Server error",
                         "schema": {
                             "$ref": "#/definitions/handler.errorResponse"
                         }
@@ -789,13 +825,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "CookieAuth": {
-            "type": "apiKey",
-            "name": "Cookie",
-            "in": "header"
         }
     }
 }`

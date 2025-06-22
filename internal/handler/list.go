@@ -8,9 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @securityDefinitions.apikey ApiKeyAuth
-// @in cookie
-// @name access_token
 
 // @Summary Create a new todo list
 // @Tags lists

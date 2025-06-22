@@ -67,7 +67,25 @@ func (r *AuthPostgres) GetUser(username, password string) (domain.User, error) {
 // }
 
 
-func (r *AuthPostgres) RevokeRefreshToken(userId int) (bool, error) {
+func (r *AuthPostgres) RevokeRefreshToken(tokenUUID uuid.UUID) (bool, error) {
+	query := fmt.Sprintf(`UPDATE %s SET revoked = true WHERE id = $1 AND revoked = false`, refreshTokensTable)
+
+	res, err := r.db.Exec(query, tokenUUID)
+	if err != nil {
+		return false, err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if rowsAffected == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (r *AuthPostgres) RevokeRefreshTokenByUserId(userId int) (bool, error) {
 	query := fmt.Sprintf(`UPDATE %s SET revoked = true WHERE user_id = $1 AND revoked = false`, refreshTokensTable)
 
 	res, err := r.db.Exec(query, userId)

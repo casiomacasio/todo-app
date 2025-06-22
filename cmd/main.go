@@ -22,9 +22,6 @@ import (
 // @description API Server for TodoList Application
 // @host localhost:8000
 // @BasePath /
-// @securityDefinitions.apikey CookieAuth
-// @in cookie
-// @name access_token
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 	if err := initConfig(); err != nil {
@@ -34,19 +31,30 @@ func main() {
 		logrus.Fatalf("error loading .env file: %s", err.Error())
 	}
 	db, err := database.NewPostgresDB(database.Config{
-		Host:     viper.GetString("db.host"),
-		Port:     viper.GetString("db.port"),
-		Username: viper.GetString("db.username"),
+		Host:     viper.GetString("postgres.db.host"),
+		Port:     viper.GetString("postgres.db.port"),
+		Username: viper.GetString("postgres.db.username"),
 		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   viper.GetString("db.dbname"),
-		SSLMode:  viper.GetString("db.sslmode"),
+		DBName:   viper.GetString("postgres.db.dbname"),
+		SSLMode:  viper.GetString("postgres.db.sslmode"),
 	})
 	if err != nil {
 		logrus.Fatalf("error initializing db: %s", err.Error())
 	}
+	rdb, err := database.NewRedisClient(database.RedisConfig{
+		Host:     viper.GetString("redis.host"),
+		Port:     viper.GetString("redis.port"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       viper.GetInt("redis.db"),
+	})
+	if err != nil {
+		logrus.Fatalf("failed to connect to Redis: %v", err)
+	}
+	defer rdb.Close()
+
 	repos := repository.NewRepository(db)
-	services := service.NewService(repos)
-	handlers := handler.NewHandler(services)
+	services := service.NewService(repos, rdb)
+	handlers := handler.NewHandler(services, rdb)
 
 	srv := new(server.Server)
 	go func () {

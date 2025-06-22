@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"github.com/casiomacasio/todo-app/internal/domain"
-	"github.com/jmoiron/sqlx"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/casiomacasio/todo-app/internal/domain"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -22,7 +23,9 @@ type Authorization interface{
 	SaveRefreshToken(hashed_token string, userId int, expires_at time.Time) (uuid.UUID, error)
 	GetUserIdAndHashByRefreshTokenId(refreshToken uuid.UUID) (int, string, error) 
 	DeleteRefreshToken(refreshToken uuid.UUID) error 
-	RevokeRefreshToken(userId int) (bool, error)
+	RevokeRefreshToken(tokenUUID uuid.UUID) (bool, error)
+	RevokeRefreshTokenByUserId(userId int) (bool, error)
+
 }
 
 type TodoList interface{

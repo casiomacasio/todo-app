@@ -10,9 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @securityDefinitions.apikey ApiKeyAuth
-// @in cookie
-// @name access_token
 
 // @Summary User registration
 // @Tags auth
@@ -30,7 +27,6 @@ func (h *Handler) signUp(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid body")
 		return
 	}
-
 	id, err := h.service.Authorization.CreateUser(input)
 	if err != nil {
 		if errors.Is(err, repository.ErrUsernameExists) {
@@ -160,11 +156,6 @@ func (h *Handler) refresh(c *gin.Context) {
 // @Failure 500 {object} errorResponse "Server error"
 // @Router /auth/logout [post]
 func (h *Handler) logout(c *gin.Context) {
-	refreshToken, err := c.Cookie("refresh_token")
-	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, "no refresh token cookie")
-		return
-	}
 	refreshTokenId, err := c.Cookie("refresh_token_id")
 	if err != nil {
 		newErrorResponse(c, http.StatusUnauthorized, "refresh_token_id is missed")
@@ -175,22 +166,13 @@ func (h *Handler) logout(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid refresh token format")
 		return
 	}
-	userId, err := h.service.GetUserByRefreshTokenAndRefreshTokenId(refreshToken, refreshTokenUUID)
-	if err != nil {
-		if errors.Is(err, repository.ErrRefreshTokenExpired) {
-			c.Header("RefreshToken-Expired", "true")
-			newErrorResponse(c, http.StatusUnauthorized, "refresh_token expired, must re-login")
-			return
-		}
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
-		return
+	if err := h.service.Authorization.RevokeRefreshToken(refreshTokenUUID); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "couldn't revoke refresh token")
 	}
-	if err == nil {
-		_ = h.service.Authorization.RevokeRefreshToken(userId)
-	}
+
 	c.SetCookie("refresh_token", "", -1, "/", "", true, true)
 	c.SetCookie("refresh_token_id", "", -1, "/", "", true, true)
 	c.SetCookie("access_token", "", -1, "/", "", true, true) 
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }

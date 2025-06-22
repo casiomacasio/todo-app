@@ -5,20 +5,23 @@ import (
 	"crypto/rand"
 	"os"
 	"time"
+
 	"github.com/google/uuid"
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/casiomacasio/todo-app/internal/repository"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
-	tokenTTL = 15 * time.Minute
+	tokenTTL           = 15 * time.Minute
+	refreshTokenTTL    = 30 * 24 * time.Hour
 )
 
 var (
-	ErrInvalidToken = errors.New("invalid token")
-	ErrTokenExpired = errors.New("token expired")
+	ErrInvalidToken  = errors.New("invalid token")
+	ErrTokenExpired  = errors.New("token expired")
 )
 
 type tokenClaims struct {
@@ -27,11 +30,12 @@ type tokenClaims struct {
 }
 
 type AuthService struct {
-	repo repository.Authorization
+	repo        repository.Authorization
+	redisClient *redis.Client
 }
 
-func NewAuthService(repo repository.Authorization) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthService(repo repository.Authorization, redisClient *redis.Client) *AuthService {
+	return &AuthService{repo: repo, redisClient: redisClient}
 }
 
 func (s *AuthService) CreateUser(user domain.User) (int, error) {
@@ -66,15 +70,26 @@ func (s *AuthService) GenerateToken(userId int) (string, error) {
 	return signedToken, nil
 }
 
-func (s *AuthService) RevokeRefreshToken(userId int) error {
-	_, err := s.repo.RevokeRefreshToken(userId)
+func (s *AuthService) RevokeRefreshToken(tokenUUID uuid.UUID) error {
+	_, err := s.repo.RevokeRefreshToken(tokenUUID)
 	if err != nil {
 		return err
 	}
+	redisKey := generateRefreshTokenRedisKey(tokenUUID)
+	s.redisClient.Del(ctx, redisKey)
 	return nil
 }
 
+
 func (s *AuthService) GetUserByRefreshTokenAndRefreshTokenId(refresh_token string, refreshTokenUUID uuid.UUID) (int, error) {
+	redisKey := generateRefreshTokenRedisKey(refreshTokenUUID)
+	cachedUserId, err := s.redisClient.Get(ctx, redisKey).Result()
+	if err == nil {
+		userId, parseErr := uuid.Parse(cachedUserId)
+		if parseErr == nil {
+			return int(userId.ID()), nil
+		}
+	}
 	userId, hashedToken, err := s.repo.GetUserIdAndHashByRefreshTokenId(refreshTokenUUID)
 	if err != nil {
 		return 0, err
@@ -89,7 +104,7 @@ func (s *AuthService) GetUserByRefreshTokenAndRefreshTokenId(refresh_token strin
 }
 
 func (s *AuthService) GenerateRefreshToken(userId int) (string, string, error) {
-	_, err := s.repo.RevokeRefreshToken(userId)
+	_, err := s.repo.RevokeRefreshTokenByUserId(userId)
 	if err != nil {
 		return "", "", err
 	}
@@ -116,6 +131,9 @@ func (s *AuthService) GenerateRefreshToken(userId int) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
+	redisKey := generateRefreshTokenRedisKey(id)
+	s.redisClient.Set(ctx, redisKey, userId, refreshTokenTTL)
 
 	return id.String(), tokenUUID.String(), nil
 }
@@ -175,4 +193,8 @@ func GenerateTokenHash(refreshToken uuid.UUID) (string, error) {
 		return "", err
 	}
 	return string(hash), nil
+}
+
+func generateRefreshTokenRedisKey(tokenUUID uuid.UUID) string {
+	return "refresh_token:" + tokenUUID.String()
 }

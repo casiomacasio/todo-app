@@ -1,10 +1,14 @@
 package service
 
 import (
+	"context"
 	"github.com/casiomacasio/todo-app/internal/domain"
 	"github.com/casiomacasio/todo-app/internal/repository"
 	"github.com/google/uuid"
-)
+	"github.com/redis/go-redis/v9"
+	)
+
+var ctx = context.Background()
 
 type Authorization interface {
 	CreateUser(user domain.User) (int, error)
@@ -13,7 +17,7 @@ type Authorization interface {
 	GetUser(username, password string) (domain.User, error)
 	GenerateToken(userId int) (string, error)
 	GenerateRefreshToken(userId int) (string, string, error)
-	RevokeRefreshToken(userId int) error
+	RevokeRefreshToken(uuid.UUID) error
 }
 
 type TodoList interface {
@@ -38,10 +42,10 @@ type Service struct {
 	TodoItem
 }
 
-func NewService(repos *repository.Repository) *Service {
+func NewService(repos *repository.Repository, redis *redis.Client) *Service {
 	return &Service{
-		Authorization: NewAuthService(repos.Authorization),
-		TodoList: NewTodoListService(repos.TodoList),
-		TodoItem: NewTodoItemService(repos.TodoItem),
+		Authorization: NewAuthService(repos.Authorization, redis),
+		TodoList: NewTodoListService(repos.TodoList, redis),
+		TodoItem: NewTodoItemService(repos.TodoItem, redis),
 	}
 }
