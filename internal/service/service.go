@@ -6,12 +6,14 @@ import (
 	"github.com/casiomacasio/todo-app/internal/repository"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	)
+)
+
+//go:generate mockgen -source=service.go -destination=mocks/mock.go
 
 var ctx = context.Background()
 
 type Authorization interface {
-	CreateUser(user domain.User) (int, error)
+	CreateUser(user domain.CreateUserRequest) (int, error)
 	GetUserByRefreshTokenAndRefreshTokenId(refresh_token string, refreshTokenUUID uuid.UUID) (int, error)
 	ParseToken(token string) (int, error)
 	GetUser(username, password string) (domain.User, error)
@@ -21,7 +23,7 @@ type Authorization interface {
 }
 
 type TodoList interface {
-	Create(userId int, list domain.TodoList) (int, error)
+	Create(userId int, list domain.CreateListRequest) (int, error)
 	GetAll(userId int) ([]domain.TodoList, error)
 	GetById(userId, listId int) (domain.TodoList, error)
 	UpdateById(userId, listId int, title, description *string) error
@@ -29,7 +31,7 @@ type TodoList interface {
 }
 
 type TodoItem interface {
-	Create(userId, listId int, input domain.TodoItem) (int, error)
+	Create(userId, listId int, input domain.CreateItemRequest) (int, error)
 	GetAllItems(userId, listId int) ([]domain.TodoItem, error)
 	GetById(userId, itemId int) (domain.TodoItem, error)
 	UpdateById(userId, itemId int, title, description *string, done *bool) error

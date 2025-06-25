@@ -23,7 +23,7 @@ func NewTodoListService(repo repository.TodoList, redisClient *redis.Client) *To
 	return &TodoListService{repo: repo, redisClient: redisClient}
 }
 
-func (s *TodoListService) Create(userId int, list domain.TodoList) (int, error) {
+func (s *TodoListService) Create(userId int, list domain.CreateListRequest) (int, error) {
 	id, err := s.repo.Create(userId, list)
 	if err != nil {
 		return 0, err

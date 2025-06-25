@@ -38,7 +38,7 @@ func NewAuthService(repo repository.Authorization, redisClient *redis.Client) *A
 	return &AuthService{repo: repo, redisClient: redisClient}
 }
 
-func (s *AuthService) CreateUser(user domain.User) (int, error) {
+func (s *AuthService) CreateUser(user domain.CreateUserRequest) (int, error) {
 	hashedPassword, err := GeneratePasswordHash(user.Password)
 	if err != nil {
 		return 0, err

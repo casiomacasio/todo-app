@@ -1,12 +1,12 @@
 port: "8000"
 postgres: 
   db:
-    host: "localhost"
-    port: "5436"
+    host: "db"
+    port: "5432"
     username: "postgres"
-    dbname: "postgres"
+    dbname: "todo_db"
     sslmode: "disable"
 redis:                         
-  host: localhost
+  host: "rdb"
   port: "6379"
   db: 2

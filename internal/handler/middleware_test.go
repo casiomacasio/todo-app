@@ -1,137 +1,101 @@
 package handler
 
-// import (
-// 	"testing"
-// 	"errors"
-// 	"github.com/gin-gonic/gin"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"github.com/casiomacasio/todo-app/internal/service"
-// 	mock_service "github.com/casiomacasio/todo-app/internal/service/mock"
-// 	"github.com/golang/mock/gomock"
-// 	"github.com/stretchr/testify/assert"
-// )
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+	"github.com/redis/go-redis/v9"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestHandler_userIdentity(t *testing.T) {
-// 	type mockBehavior func(s *mock_service.MockAuthorization, token string)
+func setupTestRedis() (*redis.Client, func()) {
+	s, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	client := redis.NewClient(&redis.Options{
+		Addr: s.Addr(),
+	})
+	return client, func() {
+		client.Close()
+		s.Close()
+	}
+}
 
-// 	testTable := []struct {
-// 		name               string
-// 		header             string
-// 		token              string
-// 		mockBehavior       mockBehavior
-// 		expectedStatusCode int
-// 		expectedBody       string
-// 	}{
-// 		{
-// 			name:               "No header",
-// 			header:             "",
-// 			mockBehavior:       func(s *mock_service.MockAuthorization, token string) {},
-// 			expectedStatusCode: http.StatusUnauthorized,
-// 			expectedBody:       `{"message":"empty auth header"}`,
-// 		},
-// 		{
-// 			name:               "Invalid header format",
-// 			header:             "BearerTokenOnly",
-// 			mockBehavior:       func(s *mock_service.MockAuthorization, token string) {},
-// 			expectedStatusCode: http.StatusUnauthorized,
-// 			expectedBody:       `{"message":"header's length in invalid"}`,
-// 		},
-// 		{
-// 			name:   "Invalid token",
-// 			header: "Bearer invalidtoken",
-// 			token:  "invalidtoken",
-// 			mockBehavior: func(s *mock_service.MockAuthorization, token string) {
-// 				s.EXPECT().ParseToken(token).Return(0, errors.New("invalid token"))
-// 			},
-// 			expectedStatusCode: http.StatusUnauthorized,
-// 			expectedBody:       `{"message":"invalid token"}`,
-// 		},
-// 		{
-// 			name:   "Success",
-// 			header: "Bearer validtoken",
-// 			token:  "validtoken",
-// 			mockBehavior: func(s *mock_service.MockAuthorization, token string) {
-// 				s.EXPECT().ParseToken(token).Return(42, nil)
-// 			},
-// 			expectedStatusCode: http.StatusOK,
-// 			expectedBody:       `{"message":"ok"}`,
-// 		},
-// 	}
+func setupRouterWithMiddleware(middleware gin.HandlerFunc, userCtxEnabled bool) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		if userCtxEnabled {
+			c.Set("userId", 1)
+		}
+		c.Next()
+	})
 
-// 	for _, testCase := range testTable {
-// 		t.Run(testCase.name, func(t *testing.T) {
-// 			gin.SetMode(gin.TestMode)
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+	r.Use(middleware)
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
 
-// 			auth := mock_service.NewMockAuthorization(ctrl)
-// 			testCase.mockBehavior(auth, testCase.token)
+	return r
+}
 
-// 			services := &service.Service{Authorization: auth}
-// 			handler := NewHandler(services)
-// 			router := gin.New()
-// 			router.GET("/protected", handler.userIdentity, func(c *gin.Context) {
-// 				c.JSON(http.StatusOK, gin.H{"message": "ok"})
-// 			})
+func TestRateLimitMiddleware(t *testing.T) {
+	redisClient, cleanup := setupTestRedis()
+	defer cleanup()
 
-// 			req := httptest.NewRequest(http.MethodGet, "/protected", nil)
-// 			if testCase.header != "" {
-// 				req.Header.Set("Authorization", testCase.header)
-// 			}
-// 			w := httptest.NewRecorder()
-// 			router.ServeHTTP(w, req)
+	router := setupRouterWithMiddleware(RateLimitMiddleware(redisClient, 3, time.Minute), true)
 
-// 			assert.Equal(t, testCase.expectedStatusCode, w.Code)
-// 			assert.JSONEq(t, testCase.expectedBody, w.Body.String())
-// 		})
-// 	}
-// }
+	for i := 1; i <= 4; i++ {
+		rec := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		router.ServeHTTP(rec, req)
 
-// func Test_getUserID(t *testing.T) {
-// 	testTable := []struct {
-// 		name          string
-// 		ctxSetup      func(*gin.Context)
-// 		expectedID    int
-// 		expectedError string
-// 	}{
-// 		{
-// 			name: "Success",
-// 			ctxSetup: func(c *gin.Context) {
-// 				c.Set(userCtx, 123)
-// 			},
-// 			expectedID:    123,
-// 			expectedError: "",
-// 		},
-// 		{
-// 			name: "Not found",
-// 			ctxSetup: func(c *gin.Context) {},
-// 			expectedID:    0,
-// 			expectedError: "user id not found",
-// 		},
-// 		{
-// 			name: "Wrong type",
-// 			ctxSetup: func(c *gin.Context) {
-// 				c.Set(userCtx, "not an int")
-// 			},
-// 			expectedID:    0,
-// 			expectedError: "user id is not of valid type",
-// 		},
-// 	}
+		if i <= 3 {
+			assert.Equal(t, http.StatusOK, rec.Code, "request #%d should pass", i)
+		} else {
+			assert.Equal(t, http.StatusTooManyRequests, rec.Code, "request #%d should be rate limited", i)
+		}
+	}
+}
 
-// 	for _, tt := range testTable {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			gin.SetMode(gin.TestMode)
-// 			c, _ := gin.CreateTestContext(httptest.NewRecorder())
-// 			tt.ctxSetup(c)
+func TestGlobalRateLimitMiddleware(t *testing.T) {
+	redisClient, cleanup := setupTestRedis()
+	defer cleanup()
 
-// 			id, err := getUserID(c)
-// 			assert.Equal(t, tt.expectedID, id)
-// 			if tt.expectedError == "" {
-// 				assert.NoError(t, err)
-// 			} else {
-// 				assert.EqualError(t, err, tt.expectedError)
-// 			}
-// 		})
-// 	}
-// }
+	router := setupRouterWithMiddleware(GlobalRateLimitMiddleware(redisClient, 2, time.Minute), false)
+
+	for i := 1; i <= 3; i++ {
+		rec := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		router.ServeHTTP(rec, req)
+
+		if i <= 2 {
+			assert.Equal(t, http.StatusOK, rec.Code, "request #%d should pass", i)
+		} else {
+			assert.Equal(t, http.StatusTooManyRequests, rec.Code, "request #%d should be rate limited", i)
+		}
+	}
+}
+
+func TestRateLimitIPMiddleware(t *testing.T) {
+	redisClient, cleanup := setupTestRedis()
+	defer cleanup()
+
+	router := setupRouterWithMiddleware(RateLimitIPMiddleware(redisClient, 1, time.Minute), false)
+
+	rec1 := httptest.NewRecorder()
+	req1, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req1.RemoteAddr = "1.2.3.4:1234"
+	router.ServeHTTP(rec1, req1)
+	assert.Equal(t, http.StatusOK, rec1.Code)
+
+	rec2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req2.RemoteAddr = "1.2.3.4:1234"
+	router.ServeHTTP(rec2, req2)
+	assert.Equal(t, http.StatusTooManyRequests, rec2.Code)
+}

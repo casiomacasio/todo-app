@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  todo-app:
+    build: ./
+    command: ./todo-app
+    ports:
+      - "8000:8000"  
+    depends_on:
+      - db
+      - rdb
+    environment:
+      - DB_PASSWORD=qwerty 
+      - REDIS_PASSWORD=redis
+      - signingKey=jfklsdfj;eiwo;dskivewjieow;fiof  
+
+  db:
+    image: postgres:latest 
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_DB=todo_db                
+    volumes:
+      - ./.database/postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  
+
+  rdb:
+    image: redis:latest
+    restart: always
+    command: ["redis-server", "--requirepass", "redis"]
+    ports:
+      - "6380:6379"

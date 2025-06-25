@@ -13,7 +13,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path int true "Todo list ID"
-// @Param input body domain.TodoItem true "Todo item data"
+// @Param input body domain.CreateItemRequest true "Todo item data"
 // @Success 200 {object} map[string]interface{} "Created item ID"
 // @Failure 400 {object} errorResponse
 // @Failure 500 {object} errorResponse
@@ -29,7 +29,7 @@ func (h Handler) createItem(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid list_id param")
 		return
 	}
-	var input domain.TodoItem
+	var input domain.CreateItemRequest
 	if err := c.BindJSON(&input); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return

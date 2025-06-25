@@ -23,7 +23,7 @@ func NewTodoItemService(repo repository.TodoItem, redisClient *redis.Client) *To
 	return &TodoItemService{repo: repo, redisClient: redisClient}
 }
 
-func (s *TodoItemService) Create(userId, listId int, item domain.TodoItem) (int, error) {
+func (s *TodoItemService) Create(userId, listId int, item domain.CreateItemRequest) (int, error) {
 	id, err := s.repo.Create(userId, listId, item)
 	if err != nil {
 		return 0, err

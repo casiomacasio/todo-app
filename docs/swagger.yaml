@@ -1,5 +1,38 @@
 basePath: /
 definitions:
+  domain.CreateItemRequest:
+    properties:
+      description:
+        type: string
+      done:
+        type: boolean
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  domain.CreateListRequest:
+    properties:
+      description:
+        type: string
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  domain.CreateUserRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - name
+    - password
+    - username
+    type: object
   domain.TodoItem:
     properties:
       description:
@@ -39,21 +72,6 @@ definitions:
         type: string
       title:
         type: string
-    type: object
-  domain.User:
-    properties:
-      _:
-        type: integer
-      name:
-        type: string
-      password:
-        type: string
-      username:
-        type: string
-    required:
-    - name
-    - password
-    - username
     type: object
   handler.errorResponse:
     properties:
@@ -222,7 +240,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/domain.TodoList'
+          $ref: '#/definitions/domain.CreateListRequest'
       produces:
       - application/json
       responses:
@@ -380,7 +398,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/domain.TodoItem'
+          $ref: '#/definitions/domain.CreateItemRequest'
       produces:
       - application/json
       responses:
@@ -500,7 +518,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/domain.User'
+          $ref: '#/definitions/domain.CreateUserRequest'
       produces:
       - application/json
       responses:

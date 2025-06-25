@@ -15,14 +15,14 @@ import (
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param input body domain.User true "User credentials"
+// @Param input body domain.CreateUserRequest true "User credentials"
 // @Success 200 {object} map[string]interface{} "Registered user ID"
 // @Failure 400 {object} errorResponse "Invalid request body"
 // @Failure 409 {object} errorResponse "Username already exists"
 // @Failure 500 {object} errorResponse "Server error"
 // @Router /auth/sign-up [post]
 func (h *Handler) signUp(c *gin.Context) {
-	var input domain.User
+	var input domain.CreateUserRequest
 	if err := c.BindJSON(&input); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, "invalid body")
 		return

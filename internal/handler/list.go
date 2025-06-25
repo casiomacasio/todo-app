@@ -13,7 +13,7 @@ import (
 // @Tags lists
 // @Accept json
 // @Produce json
-// @Param input body domain.TodoList true "Todo list data"
+// @Param input body domain.CreateListRequest true "Todo list data"
 // @Success 200 {object} map[string]interface{} "Created list ID"
 // @Failure 400 {object} errorResponse
 // @Failure 500 {object} errorResponse
@@ -24,7 +24,7 @@ func (h Handler) createList(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	var input domain.TodoList
+	var input domain.CreateListRequest
 	if err := c.BindJSON(&input); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
