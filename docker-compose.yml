@@ -1,11 +1,13 @@
-version: '3.8'
-
 services:
   todo-app:
-    build: ./
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
     command: ./todo-app
     ports:
       - "8000:8000"  
+    volumes:
+      - ./frontend:/app/frontend
     depends_on:
       - db
       - rdb
