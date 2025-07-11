@@ -1,22 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import Login from './Login';
-import TodoLists from './TodoLists';
-import { checkAuth } from './api';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    checkAuth().then(authenticated => {
-      setIsAuthenticated(authenticated);
-    });
-  }, []);
-
-  return isAuthenticated ? (
-    <TodoLists onLogout={() => setIsAuthenticated(false)} />
-  ) : (
-    <Login onLogin={() => setIsAuthenticated(true)} />
-  );
-}
-
-export default App;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);

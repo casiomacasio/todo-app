@@ -1,4 +1,4 @@
-const API_BASE = '';
+const API_BASE = 'http://localhost:8000';
 
 export async function signIn(username, password) {
   const res = await fetch(`${API_BASE}/auth/sign-in`, {
