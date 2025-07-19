@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { getLists, logout, getListById, updateList } from './api';
+import {createList, getLists, logout, getListById, updateList } from './api';
 
 function TodoLists({ onLogout }) {
   const [lists, setLists] = useState(null);
   const [selectedList, setSelectedList] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [editTitle, setEditTitle] = useState('');
@@ -58,14 +59,29 @@ function TodoLists({ onLogout }) {
         alert('Title is required');
         return;
       }
+
       const newId = await createList(newTitle.trim(), newDesc.trim());
-      console.log('New list created with id:', newId);
+
+      if (!newId) {
+        throw new Error("Create returned invalid id");
+      }
+
+      console.log("Created successfully");
+
+      const updated = await getLists();
+      const normalized = Array.isArray(updated)
+        ? updated
+        : Array.isArray(updated?.data)
+          ? updated.data
+          : [];
+
+      setLists(normalized);
       setShowModal(false);
       setNewTitle('');
       setNewDesc('');
-      await loadLists();
     } catch (err) {
       console.error('Error creating list:', err);
+      alert('Create failed. Try again.');
     }
   }
 
@@ -99,14 +115,13 @@ function TodoLists({ onLogout }) {
     }
   };
 
-
   if (!Array.isArray(lists)) return <div>Loading...</div>;
 
   return (
     <div>
       <h1>Your Todo Lists</h1>
       <button onClick={handleLogout}>Logout</button>
-
+      <button onClick={() => setShowModal(true)}>Create New Todo List</button>
       <ul>
         {lists.map(list => (
           <li key={list.id}>
@@ -120,8 +135,6 @@ function TodoLists({ onLogout }) {
           </li>
         ))}
       </ul>
-
-      {/* Modal */}
       {isModalOpen && (
         <div style={modalOverlay}>
           <div style={modalBox}>
@@ -145,23 +158,30 @@ function TodoLists({ onLogout }) {
           </div>
         </div>
       )}
-      <div style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '10px' }}>
-        <h3>Create New List</h3>
-        <input
-          type="text"
-          placeholder="Title"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          style={{ display: 'block', marginBottom: '8px' }}
-        />
-        <textarea
-          placeholder="Description (optional)"
-          value={newDesc}
-          onChange={(e) => setNewDesc(e.target.value)}
-          style={{ display: 'block', marginBottom: '8px' }}
-        />
-        <button onClick={handleCreate}>Create New Todo List</button>
-      </div>
+      {showModal && (
+        <div style={modalOverlay}>
+          <div style={modalContent}>
+            <h2>Create New Todo List</h2>
+            <input
+              type="text"
+              placeholder="Title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              style={{ width: '100%', marginBottom: '10px' }}
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              style={{ width: '100%', marginBottom: '10px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={handleCreate}>Create</button>
+              <button onClick={() => setShowModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -189,6 +209,14 @@ const updateButton = {
   position: 'absolute',
   top: 10,
   right: 10,
+};
+
+const modalContent = {
+  backgroundColor: '#fff',
+  padding: '20px',
+  borderRadius: '8px',
+  minWidth: '300px',
+  boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
 };
 
 export default TodoLists;
