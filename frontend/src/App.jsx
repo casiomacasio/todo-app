@@ -1,25 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { checkAuth } from './api';
 import Login from './Login';
-import TodoLists from './TodoLists';
-import { checkAuth, initAutoRefresh } from './api';
+import Signup from './Signup';
+import Todos from './TodoLists';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
-    checkAuth().then(ok => {
-      setIsAuthenticated(ok);
-      if (ok) initAutoRefresh();
-    });
+    (async () => {
+      try {
+        const ok = await checkAuth();
+        setIsAuthenticated(ok);
+      } catch {
+        setIsAuthenticated(false);
+      }
+    })();
   }, []);
 
-  return isAuthenticated ? (
-    <TodoLists onLogout={() => setIsAuthenticated(false)} />
-  ) : (
-    <Login onLogin={() => {
-      setIsAuthenticated(true);
-      initAutoRefresh();
-    }} />
+  if (isAuthenticated === null) return <p>Loading...</p>;
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/todos"
+          element={isAuthenticated ? <Todos onLogout={() => setIsAuthenticated(false)}/> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/"
+          element={<Navigate to={isAuthenticated ? '/todos' : '/login'} />}
+        />
+      </Routes>
+    </Router>
   );
 }
 

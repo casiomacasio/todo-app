@@ -31,7 +31,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	auth := router.Group("/auth")
-	auth.Use(RateLimitIPMiddleware(h.redisClient, 5, time.Minute))
+	auth.Use(RateLimitIPMiddleware(h.redisClient, 500, time.Minute))
 
 	{
 		auth.POST("/sign-up", h.signUp)
@@ -42,7 +42,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	api := router.Group("/api")
 	api.Use(h.userIdentity)
-	api.Use(RateLimitMiddleware(h.redisClient, 50, time.Minute)) 
+	api.Use(RateLimitMiddleware(h.redisClient, 500, time.Minute)) 
 	{
 		lists := api.Group("/lists")
 		{
@@ -65,8 +65,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			items.PUT("/:id", h.updateItem)
 			items.DELETE("/:id", h.deleteItem)
 		}
-	}
-	router.Static("/app", "./frontend")
-
+	}                                                                                        
+	router.Static("/assets", "./frontend/dist/assets")
+	router.NoRoute(func(c *gin.Context) {
+		c.File("./frontend/dist/index.html") 
+	})
 	return router
 }

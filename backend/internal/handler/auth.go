@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/casiomacasio/todo-app/backend/internal/domain"
@@ -10,6 +11,47 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var isProd = os.Getenv("APP_ENV") == "production"
+
+func setAuthCookies(c *gin.Context, accessToken, refreshToken, refreshTokenId string) {
+	sameSite := http.SameSiteLaxMode
+	secure := false
+
+	if isProd {
+		sameSite = http.SameSiteNoneMode
+		secure = true
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   15 * 60,
+	})
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   30 * 24 * 60 * 60,
+	})
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token_id",
+		Value:    refreshTokenId,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   30 * 24 * 60 * 60,
+	})
+}
 
 // @Summary User registration
 // @Tags auth
@@ -51,7 +93,7 @@ type signInInput struct {
 // @Accept json
 // @Produce json
 // @Param input body signInInput true "Username and password"
-// @Success 200 {object} map[string]string "Login success message; sets cookies: access_token, refresh_token, refresh_token_id"
+// @Success 200 {object} map[string]string "Login success message; sets cookies"
 // @Failure 400 {object} errorResponse "Invalid request or credentials"
 // @Failure 500 {object} errorResponse "Server error"
 // @Router /auth/sign-in [post]
@@ -80,9 +122,7 @@ func (h *Handler) signIn(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("refresh_token", refreshToken, 30*24*60*60, "/", "", true, true)
-	c.SetCookie("refresh_token_id", tokenID, 30*24*60*60, "/", "", true, true)
-	c.SetCookie("access_token", accessToken, 15*60, "/", "", true, true)
+	setAuthCookies(c, accessToken, refreshToken, tokenID)
 
 	c.JSON(http.StatusOK, map[string]string{
 		"message": "logged in successfully",
@@ -137,9 +177,7 @@ func (h *Handler) refresh(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("refresh_token", newRefreshToken, 30*24*60*60, "/", "", true, true)
-	c.SetCookie("refresh_token_id", newTokenId, 30*24*60*60, "/", "", true, true)
-	c.SetCookie("access_token", newAccessToken, 60*60, "/", "", true, true)
+	setAuthCookies(c, newAccessToken, newRefreshToken, newTokenId)
 
 	c.JSON(http.StatusOK, map[string]string{
 		"message": "token refreshed",
@@ -170,9 +208,21 @@ func (h *Handler) logout(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "couldn't revoke refresh token")
 	}
 
-	c.SetCookie("refresh_token", "", -1, "/", "", true, true)
-	c.SetCookie("refresh_token_id", "", -1, "/", "", true, true)
-	c.SetCookie("access_token", "", -1, "/", "", true, true) 
+	deleteCookie := func(name string) {
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     name,
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   isProd,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   -1,
+		})
+	}
+
+	deleteCookie("access_token")
+	deleteCookie("refresh_token")
+	deleteCookie("refresh_token_id")
 
 	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }
