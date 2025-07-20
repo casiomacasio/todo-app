@@ -58,14 +58,6 @@ func (r *AuthPostgres) GetUser(username, password string) (domain.User, error) {
 	}
 	return user, nil
 }
-// type RefreshToken struct {
-// 	Token     uuid.UUID
-// 	UserID    int
-// 	IssuedAt  time.Time
-// 	ExpiresAt time.Time
-// 	Revoked   bool
-// }
-
 
 func (r *AuthPostgres) RevokeRefreshToken(tokenUUID uuid.UUID) (bool, error) {
 	query := fmt.Sprintf(`UPDATE %s SET revoked = true WHERE id = $1 AND revoked = false`, refreshTokensTable)

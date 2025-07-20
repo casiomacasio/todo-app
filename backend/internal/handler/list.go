@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 // @Summary Create a new todo list
 // @Tags lists
 // @Accept json
@@ -29,7 +28,7 @@ func (h Handler) createList(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.service.TodoList.Create(userId, input)
+	id, err := h.service.TodoList.Create(c.Request.Context(), userId, input)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -59,7 +58,7 @@ func (h Handler) getAllLists(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	lists, err := h.service.TodoList.GetAll(userId)
+	lists, err := h.service.TodoList.GetAll(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -86,7 +85,7 @@ func (h Handler) getListById(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid id param")
 		return
 	}
-	list, err := h.service.TodoList.GetById(userId, id)
+	list, err := h.service.TodoList.GetById(c.Request.Context(), userId, id)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -120,7 +119,7 @@ func (h Handler) updateList(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.service.TodoList.UpdateById(userId, id, input.Title, input.Description)
+	err = h.service.TodoList.UpdateById(c.Request.Context(), userId, id, input.Title, input.Description)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -149,7 +148,7 @@ func (h Handler) deleteList(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "invalid id param")
 		return
 	}
-	err = h.service.TodoList.DeleteById(userId, id)
+	err = h.service.TodoList.DeleteById(c.Request.Context(), userId, id)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

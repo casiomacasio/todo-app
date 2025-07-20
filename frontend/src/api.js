@@ -19,6 +19,20 @@ export async function createList(title, description = '') {
   return data.id;
 }
 
+export async function deleteListById(id) {
+  const response = await fetch(`${API_BASE}/api/lists/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete list");
+  }
+
+  return await response.json(); 
+}
+
+
 export async function getLists() {
   const res = await fetch(`${API_BASE}/api/lists`, {
     method: 'GET',
@@ -82,7 +96,7 @@ export async function updateList(id, title, description = '') {
     throw new Error('Failed to update');
   }
 
-  return res.json(); // or: return res.text(); depending on what backend returns
+  return res.json(); 
 }
 
 

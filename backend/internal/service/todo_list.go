@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -23,17 +24,17 @@ func NewTodoListService(repo repository.TodoList, redisClient *redis.Client) *To
 	return &TodoListService{repo: repo, redisClient: redisClient}
 }
 
-func (s *TodoListService) Create(userId int, list domain.CreateListRequest) (int, error) {
+func (s *TodoListService) Create(ctx context.Context, userId int, list domain.CreateListRequest) (int, error) {
 	id, err := s.repo.Create(userId, list)
 	if err != nil {
 		return 0, err
 	}
 	userKey := getUserListsCacheKey(userId)
-	s.redisClient.Del(ctx, userKey)
+	_ = s.redisClient.Del(ctx, userKey).Err() // safe clear
 	return id, nil
 }
 
-func (s *TodoListService) GetAll(userId int) ([]domain.TodoList, error) {
+func (s *TodoListService) GetAll(ctx context.Context, userId int) ([]domain.TodoList, error) {
 	userKey := getUserListsCacheKey(userId)
 
 	cached, err := s.redisClient.Get(ctx, userKey).Result()
@@ -50,12 +51,12 @@ func (s *TodoListService) GetAll(userId int) ([]domain.TodoList, error) {
 	}
 
 	data, _ := json.Marshal(lists)
-	s.redisClient.Set(ctx, userKey, data, todoListCacheTTL)
+	_ = s.redisClient.Set(ctx, userKey, data, todoListCacheTTL).Err()
 	return lists, nil
 }
 
-func (s *TodoListService) GetById(userId, listId int) (domain.TodoList, error) {
-	listKey := getListCacheKey(userId)
+func (s *TodoListService) GetById(ctx context.Context, userId, listId int) (domain.TodoList, error) {
+	listKey := getListCacheKey(userId, listId)
 
 	cached, err := s.redisClient.Get(ctx, listKey).Result()
 	if err == nil {
@@ -71,34 +72,34 @@ func (s *TodoListService) GetById(userId, listId int) (domain.TodoList, error) {
 	}
 
 	data, _ := json.Marshal(list)
-	s.redisClient.Set(ctx, listKey, data, todoListCacheTTL)
+	_ = s.redisClient.Set(ctx, listKey, data, todoListCacheTTL).Err()
 	return list, nil
 }
 
-func (s *TodoListService) UpdateById(userId, listId int, title, description *string) error {
+func (s *TodoListService) UpdateById(ctx context.Context, userId, listId int, title, description *string) error {
 	err := s.repo.UpdateById(userId, listId, title, description)
 	if err != nil {
 		return err
 	}
 
-	listKey := getListCacheKey(listId)
+	listKey := getListCacheKey(userId, listId)
 	userKey := getUserListsCacheKey(userId)
-	s.redisClient.Del(ctx, listKey)
-	s.redisClient.Del(ctx, userKey)
+	_ = s.redisClient.Del(ctx, listKey).Err()
+	_ = s.redisClient.Del(ctx, userKey).Err()
 
 	return nil
 }
 
-func (s *TodoListService) DeleteById(userId, listId int) error {
+func (s *TodoListService) DeleteById(ctx context.Context, userId, listId int) error {
 	err := s.repo.DeleteById(userId, listId)
 	if err != nil {
 		return err
 	}
 
-	listKey := getListCacheKey(listId)
+	listKey := getListCacheKey(userId, listId)
 	userKey := getUserListsCacheKey(userId)
-	s.redisClient.Del(ctx, listKey)
-	s.redisClient.Del(ctx, userKey)
+	_ = s.redisClient.Del(ctx, listKey).Err()
+	_ = s.redisClient.Del(ctx, userKey).Err()
 
 	return nil
 }
@@ -107,6 +108,6 @@ func getUserListsCacheKey(userId int) string {
 	return fmt.Sprintf("user:%d:lists", userId)
 }
 
-func getListCacheKey(listId int) string {
-	return fmt.Sprintf("list:%d", listId)
+func getListCacheKey(userID, listID int) string {
+	return fmt.Sprintf("user:%d:list:%d", userID, listID)
 }

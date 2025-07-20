@@ -23,11 +23,11 @@ type Authorization interface {
 }
 
 type TodoList interface {
-	Create(userId int, list domain.CreateListRequest) (int, error)
-	GetAll(userId int) ([]domain.TodoList, error)
-	GetById(userId, listId int) (domain.TodoList, error)
-	UpdateById(userId, listId int, title, description *string) error
-	DeleteById(userId, listId int) error
+	Create(ctx context.Context, userId int, list domain.CreateListRequest) (int, error)
+	GetAll(ctx context.Context, userId int) ([]domain.TodoList, error)
+	GetById(ctx context.Context, userId, listId int) (domain.TodoList, error)
+	UpdateById(ctx context.Context, userId, listId int, title, description *string) error
+	DeleteById(ctx context.Context, userId, listId int) error
 }
 
 type TodoItem interface {

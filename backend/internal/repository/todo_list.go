@@ -83,7 +83,6 @@ func (r *TodoListPostgres) UpdateById(userId, listId int, title, description *st
 }
 
 
-
 func (r *TodoListPostgres) DeleteById(userId, listId int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
