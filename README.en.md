@@ -58,4 +58,5 @@ After starting the backend, you can open the API documentation in your browser:
 http://localhost:8000/swagger/index.html
 
 📄 This documentation is also available in [Russian](README.md)
+
 📄 Документация также доступна на [Русский](README.en.md)
