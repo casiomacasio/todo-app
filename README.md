@@ -32,8 +32,11 @@ cd todo-app
 
 ### 2. Создать .env файл и указать переменные окружения
 Пример .env:
+
 DB_PASSWORD=qwerty
+
 REDIS_PASSWORD=redis
+
 signingKey="jfklsdfj;eiwo;dskivewjieow;fiof"
 
 ### 3. Собрать и запустить backend
