@@ -27,26 +27,32 @@ This project implements a full-featured backend in Go (with REST API, authentica
 ## ⚙️ How to Run the Project
 
 ### 1. Clone the repository
+```bash
 git clone https://github.com/casiomacasio/todo-app.git
 cd todo-app
+```
 
 ### 2. Create a `.env` file and set environment variables
+```bash
 Example .env:
 DB_PASSWORD=qwerty
 REDIS_PASSWORD=redis
 signingKey="jfklsdfj;eiwo;dskivewjieow;fiof"
-
+```
 ### 3. Build and run the backend
+```bash
 make build && make run
-
+```
 ### 4. Apply migrations (on first run)
+```bash
 make migrate
-
+```
 ### 5. Run the frontend
+```bash
 cd frontend
 npm install
 npm run dev
-
+```
 📚 **Swagger Documentation**
 After starting the backend, you can open the API documentation in your browser:
 http://localhost:8000/swagger/index.html
