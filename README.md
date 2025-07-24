@@ -28,6 +28,7 @@
 
 ### 1. Клонировать репозиторий 
 git clone https://github.com/casiomacasio/todo-app.git
+
 cd todo-app
 
 ### 2. Создать .env файл и указать переменные окружения
@@ -47,11 +48,16 @@ make migrate
 
 ### 5. Запустить frontend
 cd frontend
+
 npm install
+
 npm run dev
+
 📚 Swagger-документация
+
 После запуска backend вы можете открыть документацию API в браузере:
 http://localhost:8000/swagger/index.html
 
 📄 This documentation is also available in [English](README.en.md)
+
 📄 Документация также доступна на [Английский](README.en.md)
