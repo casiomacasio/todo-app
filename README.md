@@ -27,10 +27,11 @@
 ## ⚙️ Как запустить проект
 
 ### 1. Клонировать репозиторий 
+```bash
 git clone https://github.com/casiomacasio/todo-app.git
 
 cd todo-app
-
+```
 ### 2. Создать .env файл и указать переменные окружения
 Пример .env:
 
