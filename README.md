@@ -34,26 +34,29 @@ cd todo-app
 ```
 ### 2. Создать .env файл и указать переменные окружения
 Пример .env:
-
+```bash
 DB_PASSWORD=qwerty
 
 REDIS_PASSWORD=redis
 
 signingKey="jfklsdfj;eiwo;dskivewjieow;fiof"
-
+```
 ### 3. Собрать и запустить backend
+```bash
 make build && make run
-
+```
 ### 4. Применить миграции (при первом запуске)
+```bash
 make migrate
-
+```
 ### 5. Запустить frontend
+```bash
 cd frontend
 
 npm install
 
 npm run dev
-
+```
 📚 Swagger-документация
 
 После запуска backend вы можете открыть документацию API в браузере:
