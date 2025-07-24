@@ -26,7 +26,7 @@ func NewHandler(service *service.Service, redisClient *redis.Client) *Handler {
 
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.Default()
-	router.Use(GlobalRateLimitMiddleware(h.redisClient, 1000, time.Minute)) 
+	router.Use(GlobalRateLimitMiddleware(h.redisClient, 1000, time.Minute))
 	
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
