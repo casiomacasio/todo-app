@@ -111,18 +111,6 @@ func (h Handler) getItemById(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Item ID"
-// @Param input body domain.UpdateItemInput true "Updated item data"
-// @Success 200 {object} map[string]string "Status message"
-// @Failure 400 {object} errorResponse
-// @Failure 500 {object} errorResponse
-// @Security ApiKeyAuth
-// @Router /api/items/{id} [put]
-
-// @Summary Update an existing item
-// @Tags items
-// @Accept json
-// @Produce json
-// @Param id path int true "Item ID"
 // @Param input body domain.UpdateItemInput true "Updated item data (title, description)"
 // @Success 200 {object} map[string]string "Status message"
 // @Failure 400 {object} errorResponse

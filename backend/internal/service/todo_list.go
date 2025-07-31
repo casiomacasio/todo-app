@@ -30,7 +30,7 @@ func (s *TodoListService) Create(ctx context.Context, userId int, list domain.Cr
 		return 0, err
 	}
 	userKey := getUserListsCacheKey(userId)
-	_ = s.redisClient.Del(ctx, userKey).Err() // safe clear
+	_ = s.redisClient.Del(ctx, userKey).Err() 
 	return id, nil
 }
 
