@@ -34,7 +34,6 @@ type TodoList interface{
 	GetById(userId, listId int) (domain.TodoList, error)
 	UpdateById(userId, listId int, title, description *string) error
 	DeleteById(userId, listId int) error
-
 }
 
 type TodoItem interface{

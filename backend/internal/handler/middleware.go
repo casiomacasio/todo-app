@@ -16,7 +16,7 @@ const userCtx = "userId"
 
 var ctx = context.Background()
 
-func (h Handler) userIdentity(c *gin.Context) {
+func (h *Handler) userIdentity(c *gin.Context) {
 	token, err := c.Cookie("access_token")
 	if err != nil {
 		newErrorResponse(c, http.StatusUnauthorized, "missing access token cookie")

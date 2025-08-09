@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
 	"github.com/casiomacasio/todo-app/backend/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"

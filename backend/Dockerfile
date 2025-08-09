@@ -10,6 +10,4 @@ COPY . .
 
 RUN go build -o todo-app ./backend/cmd/main.go
 
-RUN mkdir -p /app/configs && cp ./backend/configs/config.yaml /app/configs/
-
 CMD ["./todo-app"]

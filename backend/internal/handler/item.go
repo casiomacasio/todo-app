@@ -19,7 +19,7 @@ import (
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists/{id}/items [post]
-func (h Handler) createItem(c *gin.Context) {
+func (h *Handler) createItem(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -61,7 +61,7 @@ type getItemByIdResponses struct {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists/{id}/items [get]
-func (h Handler) getAllItem(c *gin.Context) {
+func (h *Handler) getAllItem(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -88,7 +88,7 @@ func (h Handler) getAllItem(c *gin.Context) {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/items/{id} [get]
-func (h Handler) getItemById(c *gin.Context) {
+func (h *Handler) getItemById(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -117,7 +117,7 @@ func (h Handler) getItemById(c *gin.Context) {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/items/{id} [put]
-func (h Handler) updateItem(c *gin.Context) {
+func (h *Handler) updateItem(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -151,7 +151,7 @@ func (h Handler) updateItem(c *gin.Context) {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/items/{id} [delete]
-func (h Handler) deleteItem(c *gin.Context) {
+func (h *Handler) deleteItem(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return

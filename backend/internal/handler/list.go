@@ -18,7 +18,7 @@ import (
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists [post]
-func (h Handler) createList(c *gin.Context) {
+func (h *Handler) createList(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -53,7 +53,7 @@ type getListByIdResponses struct {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists [get]
-func (h Handler) getAllLists(c *gin.Context) {
+func (h *Handler) getAllLists(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -75,7 +75,7 @@ func (h Handler) getAllLists(c *gin.Context) {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists/{id} [get]
-func (h Handler) getListById(c *gin.Context) {
+func (h *Handler) getListById(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -104,7 +104,7 @@ func (h Handler) getListById(c *gin.Context) {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists/{id} [put]
-func (h Handler) updateList(c *gin.Context) {
+func (h *Handler) updateList(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
@@ -138,7 +138,7 @@ func (h Handler) updateList(c *gin.Context) {
 // @Failure 500 {object} errorResponse
 // @Security ApiKeyAuth
 // @Router /api/lists/{id} [delete]
-func (h Handler) deleteList(c *gin.Context) {
+func (h *Handler) deleteList(c *gin.Context) {
 	userId, err := getUserID(c)
 	if err != nil {
 		return
